@@ -1,5 +1,6 @@
 #pragma once
 
+#include "juce_core/juce_core.h"
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #if (MSVC)
@@ -38,6 +39,20 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-private:
+    float inputSampleVal;
+    bool hasDataToRead() const { return audioFifo.getNumReady() > 0; }
+    int getNumSamplesReady() const { return audioFifo.getNumReady(); }
+    void writeSamplesToFifo(const float* data, int numSamples);
+    void readDisplayData (juce::AudioBuffer<float>& destBuffer, int numSamples);
+  static constexpr int audioBufferSize = 1024;
+  static constexpr int scopeSize = 512;
+
+
+  private:
+      // FIFO for thread-safe communication
+    static constexpr int fifoSize = 2048;  // Must be power of 2
+    juce::AbstractFifo audioFifo { fifoSize };
+    juce::AudioBuffer<float> fifoBuffer;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
 };

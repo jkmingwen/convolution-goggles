@@ -2,10 +2,13 @@
 
 #include "PluginProcessor.h"
 #include "BinaryData.h"
+#include "juce_audio_basics/juce_audio_basics.h"
 #include "melatonin_inspector/melatonin_inspector.h"
 
 //==============================================================================
-class PluginEditor : public juce::AudioProcessorEditor
+class PluginEditor : public juce::AudioProcessorEditor,
+                     public juce::Button::Listener,
+                     private juce::Timer
 {
 public:
     explicit PluginEditor (PluginProcessor&);
@@ -14,6 +17,8 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
+    void buttonClicked (juce::Button* button) override;
+    void timerCallback() override;
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -21,5 +26,17 @@ private:
     PluginProcessor& processorRef;
     std::unique_ptr<melatonin::Inspector> inspector;
     juce::TextButton inspectButton { "Inspect the UI" };
+    juce::Slider midiVolume;
+    juce::TextButton checkTimeButton;
+    juce::Label timeLabel;
+
+    // Display scope data
+    juce::AudioBuffer<float> displayBuffer;
+    std::vector<float> displayData;
+    static constexpr int displaySize = 512;
+
+    // GUI settings
+    juce::Rectangle<int> waveformArea;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };
