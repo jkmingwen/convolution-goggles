@@ -45,8 +45,9 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     setSize (400, 300);
 
     displayData.resize (displaySize);
-    std::fill(displayData.begin(), displayData.end(), 0.0f);
-    startTimer(33);
+    std::fill (displayData.begin(), displayData.end(), 0.0f);
+    displayBuffer.setSize (1, PluginProcessor::fifoSize);
+    startTimer (33);
 }
 
 PluginEditor::~PluginEditor()
@@ -74,91 +75,73 @@ void PluginEditor::paint (juce::Graphics& g)
 
         for (int i = 0; i < displayData.size(); ++i)
         {
-            float x = waveformArea.getX() + (i * waveformArea.getWidth() / (float)displayData.size());
+            float x = waveformArea.getX() + (i * waveformArea.getWidth() / (float) displayData.size());
             float y = waveformArea.getCentreY() - (displayData[i] * waveformArea.getHeight() * 0.4f);
 
             // Clamp y to waveform area
-            y = juce::jlimit((float)waveformArea.getY(),
-                             (float)waveformArea.getBottom(), y);
+            y = juce::jlimit ((float) waveformArea.getY(),
+                (float) waveformArea.getBottom(),
+                y);
 
             if (firstPoint)
             {
-                waveformPath.startNewSubPath(x, y);
+                waveformPath.startNewSubPath (x, y);
                 firstPoint = false;
             }
             else
             {
-                waveformPath.lineTo(x, y);
+                waveformPath.lineTo (x, y);
             }
         }
 
         // Draw the waveform
-        g.setColour(juce::Colours::lightblue);
-        g.strokePath(waveformPath, juce::PathStrokeType(1.5f));
+        g.setColour (juce::Colours::lightblue);
+        g.strokePath (waveformPath, juce::PathStrokeType (1.5f));
     }
-
 }
 
 void PluginEditor::resized()
 {
     // layout the positions of your child components here
     auto area = getLocalBounds();
-    area.removeFromBottom(50);
+    area.removeFromBottom (50);
     inspectButton.setBounds (getLocalBounds().withSizeKeepingCentre (100, 50));
     midiVolume.setBounds (40, 30, 20, getHeight() - 60);
     checkTimeButton.setBounds (200, 30, 100, 50);
     timeLabel.setBounds (200, 130, 100, 50);
 
     // Set waveform area with some padding
-    waveformArea = getLocalBounds().reduced(20);
-    waveformArea.removeFromTop(40); // Space for title
+    waveformArea = getLocalBounds().reduced (20);
+    waveformArea.removeFromTop (40); // Space for title
 }
 
 void PluginEditor::buttonClicked (juce::Button* button)
 {
-  if (button == &checkTimeButton)
+    if (button == &checkTimeButton)
     {
-      auto currentTime = juce::Time::getCurrentTime();
-      auto includeDate = true;
-      auto includeTime = true;
-      auto currentTimeString = currentTime.toString (includeDate, includeTime);
-      timeLabel.setText(currentTimeString, juce::dontSendNotification);
+        auto currentTime = juce::Time::getCurrentTime();
+        auto includeDate = true;
+        auto includeTime = true;
+        auto currentTimeString = currentTime.toString (includeDate, includeTime);
+        timeLabel.setText (currentTimeString, juce::dontSendNotification);
     }
 }
 
 void PluginEditor::timerCallback()
 {
-    if (processorRef.hasDataToRead())
+    const int ready = processorRef.getNumSamplesReady();
+    if (ready == 0)
     {
-              // Calculate how many samples to read
-        int samplesAvailable = processorRef.getNumSamplesReady();
-        int samplesToRead = juce::jmin(samplesAvailable, displaySize);
-
-        if (samplesToRead > 0)
-        {
-            // Read data from processor
-            processorRef.readDisplayData(displayBuffer, samplesToRead);
-
-            // Copy to display vector (shift old data left, add new data)
-            if (samplesToRead >= displaySize)
-            {
-                // Replace all data
-                for (int i = 0; i < displaySize; ++i)
-                    displayData[i] = displayBuffer.getSample(0, i);
-            }
-            else
-            {
-                // Shift existing data left
-                for (int i = 0; i < displaySize - samplesToRead; ++i)
-                    displayData[i] = displayData[i + samplesToRead];
-
-                // Add new data to the end
-                for (int i = 0; i < samplesToRead; ++i)
-                    displayData[displaySize - samplesToRead + i] = displayBuffer.getSample(0, i);
-            }
-
-            // Trigger repaint
-            repaint();
-        }
+        return;
     }
+
+    processorRef.readDisplayData (displayBuffer, ready);
+
+    const int n = juce::jmin (ready, displaySize);
+    const float* newest = displayBuffer.getReadPointer (0) + (ready - n);
+
+    std::move (displayData.begin() + n, displayData.end(), displayData.begin());
+    std::copy (newest, newest + n, displayData.end() - n);
+
+    repaint (waveformArea);
 }

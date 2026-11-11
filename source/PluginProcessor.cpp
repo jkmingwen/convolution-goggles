@@ -3,14 +3,14 @@
 
 //==============================================================================
 PluginProcessor::PluginProcessor()
-     : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                       )
+    : AudioProcessor (BusesProperties()
+#if !JucePlugin_IsMidiEffect
+    #if !JucePlugin_IsSynth
+              .withInput ("Input", juce::AudioChannelSet::stereo(), true)
+    #endif
+              .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+#endif
+      )
 {
     fifoBuffer.setSize (1, fifoSize);
     fifoBuffer.clear();
@@ -28,29 +28,29 @@ const juce::String PluginProcessor::getName() const
 
 bool PluginProcessor::acceptsMidi() const
 {
-   #if JucePlugin_WantsMidiInput
+#if JucePlugin_WantsMidiInput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool PluginProcessor::producesMidi() const
 {
-   #if JucePlugin_ProducesMidiOutput
+#if JucePlugin_ProducesMidiOutput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool PluginProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 double PluginProcessor::getTailLengthSeconds() const
@@ -60,8 +60,8 @@ double PluginProcessor::getTailLengthSeconds() const
 
 int PluginProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1; // NB: some hosts don't cope very well if you tell them there are 0 programs,
+    // so this should be at least 1, even if you're not really implementing programs.
 }
 
 int PluginProcessor::getCurrentProgram()
@@ -106,33 +106,33 @@ void PluginProcessor::releaseResources()
 
 bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
     return true;
-  #else
+#else
     // This is the place where you check if the layout is supported.
     // In this template code we only support mono or stereo.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
     // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
+    #if !JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
-   #endif
+    #endif
 
     return true;
-  #endif
+#endif
 }
 
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
-                                              juce::MidiBuffer& midiMessages)
+    juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused (midiMessages);
 
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     // In case we have more outputs than inputs, this code clears any output
@@ -158,41 +158,41 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     }
     auto* inputData = buffer.getReadPointer (0);
     auto numSamples = buffer.getNumSamples();
-    writeSamplesToFifo(inputData, numSamples);
+    writeSamplesToFifo (inputData, numSamples);
 }
 
-void PluginProcessor::writeSamplesToFifo(const float* data, int numSamples)
+void PluginProcessor::writeSamplesToFifo (const float* data, int numSamples)
 {
     // Get write positions from FIFO
     int start1, size1, start2, size2;
-    audioFifo.prepareToWrite(numSamples, start1, size1, start2, size2);
+    audioFifo.prepareToWrite (numSamples, start1, size1, start2, size2);
 
     // Write first chunk
     if (size1 > 0)
     {
         for (int i = 0; i < size1; ++i)
-            fifoBuffer.setSample(0, start1 + i, data[i]);
+            fifoBuffer.setSample (0, start1 + i, data[i]);
     }
 
     // Write second chunk (wraparound)
     if (size2 > 0)
     {
         for (int i = 0; i < size2; ++i)
-            fifoBuffer.setSample(0, start2 + i, data[size1 + i]);
+            fifoBuffer.setSample (0, start2 + i, data[size1 + i]);
     }
 
     // Tell FIFO we're done writing
-    audioFifo.finishedWrite(size1 + size2);
+    audioFifo.finishedWrite (size1 + size2);
 }
 
-void PluginProcessor::readDisplayData(juce::AudioBuffer<float>& destBuffer, int numSamples)
+void PluginProcessor::readDisplayData (juce::AudioBuffer<float>& destBuffer, int numSamples)
 {
     // Ensure destination buffer is large enough
-    destBuffer.setSize(1, numSamples, false, false, true);
+    destBuffer.setSize (1, numSamples, false, false, true);
 
     // Get read positions from FIFO
     int start1, size1, start2, size2;
-    audioFifo.prepareToRead(numSamples, start1, size1, start2, size2);
+    audioFifo.prepareToRead (numSamples, start1, size1, start2, size2);
 
     int destIndex = 0;
 
@@ -201,7 +201,7 @@ void PluginProcessor::readDisplayData(juce::AudioBuffer<float>& destBuffer, int 
     {
         for (int i = 0; i < size1; ++i)
         {
-            destBuffer.setSample(0, destIndex++, fifoBuffer.getSample(0, start1 + i));
+            destBuffer.setSample (0, destIndex++, fifoBuffer.getSample (0, start1 + i));
         }
     }
 
@@ -210,12 +210,12 @@ void PluginProcessor::readDisplayData(juce::AudioBuffer<float>& destBuffer, int 
     {
         for (int i = 0; i < size2; ++i)
         {
-            destBuffer.setSample(0, destIndex++, fifoBuffer.getSample(0, start2 + i));
+            destBuffer.setSample (0, destIndex++, fifoBuffer.getSample (0, start2 + i));
         }
     }
 
     // Tell FIFO we're done reading
-    audioFifo.finishedRead(size1 + size2);
+    audioFifo.finishedRead (size1 + size2);
 }
 
 //==============================================================================
@@ -244,7 +244,6 @@ void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
     // whose contents will have been created by the getStateInformation() call.
     juce::ignoreUnused (data, sizeInBytes);
 }
-
 
 //==============================================================================
 // This creates new instances of the plugin..

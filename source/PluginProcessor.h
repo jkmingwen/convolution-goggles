@@ -4,7 +4,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #if (MSVC)
-#include "ipps.h"
+    #include "ipps.h"
 #endif
 
 class PluginProcessor : public juce::AudioProcessor
@@ -42,15 +42,14 @@ public:
     float inputSampleVal;
     bool hasDataToRead() const { return audioFifo.getNumReady() > 0; }
     int getNumSamplesReady() const { return audioFifo.getNumReady(); }
-    void writeSamplesToFifo(const float* data, int numSamples);
+    void writeSamplesToFifo (const float* data, int numSamples);
     void readDisplayData (juce::AudioBuffer<float>& destBuffer, int numSamples);
-  static constexpr int audioBufferSize = 1024;
-  static constexpr int scopeSize = 512;
+    static constexpr int audioBufferSize = 1024;
+    static constexpr int scopeSize = 512;
+    static constexpr int fifoSize = 8192; // Must be power of 2
 
-
-  private:
-      // FIFO for thread-safe communication
-    static constexpr int fifoSize = 2048;  // Must be power of 2
+private:
+    // FIFO for thread-safe communication
     juce::AbstractFifo audioFifo { fifoSize };
     juce::AudioBuffer<float> fifoBuffer;
 
