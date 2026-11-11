@@ -1,0 +1,5 @@
+((c++-mode    . ((c-file-style . "bsd")         ; braces on their own line (Allman)
+                 (c-basic-offset . 4)
+                 (indent-tabs-mode . nil)))
+ (c++-ts-mode . ((c-ts-mode-indent-offset . 4)
+                 (indent-tabs-mode . nil))))
