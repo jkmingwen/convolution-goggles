@@ -103,12 +103,11 @@ void PluginEditor::paint (juce::Graphics& g)
 void PluginEditor::resized()
 {
     // layout the positions of your child components here
-    auto area = getLocalBounds();
-    area.removeFromBottom (50);
-    inspectButton.setBounds (getLocalBounds().withSizeKeepingCentre (100, 50));
-    midiVolume.setBounds (40, 30, 20, getHeight() - 60);
-    checkTimeButton.setBounds (200, 30, 100, 50);
-    timeLabel.setBounds (200, 130, 100, 50);
+    auto area = getLocalBounds().reduced (10); // 10px margin all around
+    auto footer = area.removeFromBottom (30); // 30px footer area
+    inspectButton.setBounds (footer.removeFromRight (120));
+    area.removeFromBottom (10);
+    waveformArea = area;
 
     // Set waveform area with some padding
     waveformArea = getLocalBounds().reduced (20);

@@ -39,13 +39,11 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    float inputSampleVal;
     bool hasDataToRead() const { return audioFifo.getNumReady() > 0; }
     int getNumSamplesReady() const { return audioFifo.getNumReady(); }
     void writeSamplesToFifo (const float* data, int numSamples);
     void readDisplayData (juce::AudioBuffer<float>& destBuffer, int numSamples);
-    static constexpr int audioBufferSize = 1024;
-    static constexpr int scopeSize = 512;
+
     static constexpr int fifoSize = 8192; // Must be power of 2
 
 private:
