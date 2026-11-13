@@ -2,6 +2,7 @@
 
 #include "juce_core/juce_core.h"
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "dsp/ScopeFifo.h"
 
 #if (MSVC)
     #include "ipps.h"
@@ -39,18 +40,10 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    bool hasDataToRead() const { return audioFifo.getNumReady() > 0; }
-    int getNumSamplesReady() const { return audioFifo.getNumReady(); }
-    void writeSamplesToFifo (const float* data, int numSamples);
-    void readDisplayData (juce::AudioBuffer<float>& destBuffer, int numSamples);
-
     ScopeFifo& getInputScope() noexcept { return inputScope; }
-    static constexpr int fifoSize = 8192; // Must be power of 2
 
 private:
     // FIFO for thread-safe communication
-    juce::AbstractFifo audioFifo { fifoSize };
-    juce::AudioBuffer<float> fifoBuffer;
     ScopeFifo inputScope;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)

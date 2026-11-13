@@ -1,6 +1,8 @@
 #pragma once
-#include <juce_core/juce_core.h>
+
+#include <algorithm>
 #include <array>
+#include <juce_core/juce_core.h>
 #include <span>
 
 class ScopeFifo
@@ -29,4 +31,3 @@ private:
     juce::AbstractFifo fifo { capacity };
     std::array<float, capacity> storage {};
 };
-

@@ -4,39 +4,25 @@
 #include "PluginProcessor.h"
 #include "juce_audio_basics/juce_audio_basics.h"
 #include "melatonin_inspector/melatonin_inspector.h"
+#include "gui/WaveformView.h"
 
 //==============================================================================
-class PluginEditor : public juce::AudioProcessorEditor,
-                     public juce::Button::Listener,
-                     private juce::Timer
+class PluginEditor : public juce::AudioProcessorEditor
 {
 public:
     explicit PluginEditor (PluginProcessor&);
-    ~PluginEditor() override;
 
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
-    void buttonClicked (juce::Button* button) override;
-    void timerCallback() override;
 
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     PluginProcessor& processorRef;
+    WaveformView inputView;
     std::unique_ptr<melatonin::Inspector> inspector;
     juce::TextButton inspectButton { "Inspect the UI" };
-    juce::Slider midiVolume;
-    juce::TextButton checkTimeButton;
-    juce::Label timeLabel;
-
-    // Display scope data
-    juce::AudioBuffer<float> displayBuffer;
-    std::vector<float> displayData;
-    static constexpr int displaySize = 512;
-
-    // GUI settings
-    juce::Rectangle<int> waveformArea;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };

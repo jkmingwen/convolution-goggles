@@ -12,8 +12,6 @@ PluginProcessor::PluginProcessor()
 #endif
       )
 {
-    fifoBuffer.setSize (1, fifoSize);
-    fifoBuffer.clear();
 }
 
 PluginProcessor::~PluginProcessor()
@@ -92,8 +90,6 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
 
-    audioFifo.reset();
-    fifoBuffer.clear();
 }
 
 void PluginProcessor::releaseResources()
@@ -101,7 +97,6 @@ void PluginProcessor::releaseResources()
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 
-    audioFifo.reset();
 }
 
 bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -132,66 +127,10 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ignoreUnused (midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
-    writeSamplesToFifo (buffer.getReadPointer (0), buffer.getNumSamples()); // capture input samples
+    inputScope.push (buffer.getReadPointer (0), buffer.getNumSamples());
     buffer.clear(); // clear buffer to mute output
 }
 
-void PluginProcessor::writeSamplesToFifo (const float* data, int numSamples)
-{
-    // Get write positions from FIFO
-    int start1, size1, start2, size2;
-    audioFifo.prepareToWrite (numSamples, start1, size1, start2, size2);
-
-    // Write first chunk
-    if (size1 > 0)
-    {
-        for (int i = 0; i < size1; ++i)
-            fifoBuffer.setSample (0, start1 + i, data[i]);
-    }
-
-    // Write second chunk (wraparound)
-    if (size2 > 0)
-    {
-        for (int i = 0; i < size2; ++i)
-            fifoBuffer.setSample (0, start2 + i, data[size1 + i]);
-    }
-
-    // Tell FIFO we're done writing
-    audioFifo.finishedWrite (size1 + size2);
-}
-
-void PluginProcessor::readDisplayData (juce::AudioBuffer<float>& destBuffer, int numSamples)
-{
-    // Ensure destination buffer is large enough
-    destBuffer.setSize (1, numSamples, false, false, true);
-
-    // Get read positions from FIFO
-    int start1, size1, start2, size2;
-    audioFifo.prepareToRead (numSamples, start1, size1, start2, size2);
-
-    int destIndex = 0;
-
-    // Read first chunk
-    if (size1 > 0)
-    {
-        for (int i = 0; i < size1; ++i)
-        {
-            destBuffer.setSample (0, destIndex++, fifoBuffer.getSample (0, start1 + i));
-        }
-    }
-
-    // Read second chunk (wraparound)
-    if (size2 > 0)
-    {
-        for (int i = 0; i < size2; ++i)
-        {
-            destBuffer.setSample (0, destIndex++, fifoBuffer.getSample (0, start2 + i));
-        }
-    }
-
-    // Tell FIFO we're done reading
-    audioFifo.finishedRead (size1 + size2);
-}
 
 //==============================================================================
 bool PluginProcessor::hasEditor() const
